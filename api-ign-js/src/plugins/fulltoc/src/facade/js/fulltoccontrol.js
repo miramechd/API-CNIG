@@ -86,17 +86,6 @@ export default class FullTOCControl extends M.Control {
         this.getImpl().registerEvents();
         this.render();
         this.afterRender();
-        setTimeout(() => {
-          const openBtn = document.querySelector('.m-plugin-fulltoc .m-panel-btn.icon-capas');
-          if (openBtn !== null) {
-            openBtn.addEventListener('click', () => {
-              this.template_.querySelector('.m-fulltoc-container .m-title .span-title').click();
-              setTimeout(() => {
-                this.template_.querySelector('.m-fulltoc-container .m-title .span-title').click();
-              }, 100);
-            });
-          }
-        }, 200);
       });
     });
   }
@@ -157,10 +146,13 @@ export default class FullTOCControl extends M.Control {
       if (!M.utils.isNullOrEmpty(layerName) && layerURL !== null) {
         evt.stopPropagation();
         const layer = this.map_.getLayers().filter((l) => {
-          return l.name === layerName && l.url === layerURL;
+          return l.name === layerName && (l.url === layerURL || l.type === 'Vector');
         })[0];
         // checkbox
-        if (evt.target.classList.contains('m-check')) {
+
+        if (evt.target.classList.contains('m-fulltoc-info-py-geoapi')) {
+          // console.log('---------');
+        } else if (evt.target.classList.contains('m-check')) {
           if (layer.transparent === true || !layer.isVisible()) {
             const opacity = evt.target.parentElement.parentElement.parentElement.querySelector('div.tools > input');
             if (!M.utils.isNullOrEmpty(opacity)) {
@@ -181,6 +173,9 @@ export default class FullTOCControl extends M.Control {
             this.map_.setBbox(extent);
           } else if (layer.type === 'GeoJSON') {
             const extent = this.getImpl().getGeoJSONExtent(layer);
+            this.map_.setBbox(extent);
+          } else if (layer.type === 'Vector') {
+            const extent = layer.getFeaturesExtent();
             this.map_.setBbox(extent);
           } else {
             M.dialog.info(getValue('exception.extent'), getValue('info'));
@@ -254,7 +249,7 @@ export default class FullTOCControl extends M.Control {
             vars.capabilities = M.utils.getWMTSGetCapabilitiesUrl(layer.url);
             if (!M.utils.isNullOrEmpty(layer.capabilitiesMetadata.attribution)) {
               vars.provider = `${layer.capabilitiesMetadata.attribution.ProviderName}` +
-              `<p><a class="m-fulltoc-provider-link" href="${layer.capabilitiesMetadata.attribution.ProviderSite}" target="_blank">${layer.capabilitiesMetadata.attribution.ProviderSite}</a></p>`;
+                `<p><a class="m-fulltoc-provider-link" href="${layer.capabilitiesMetadata.attribution.ProviderSite}" target="_blank">${layer.capabilitiesMetadata.attribution.ProviderSite}</a></p>`;
               const sc = layer.capabilitiesMetadata.attribution.ServiceContact;
               if (!M.utils.isNullOrEmpty(sc) && !M.utils.isNullOrEmpty(sc.ContactInfo)) {
                 const mail = sc.ContactInfo.Address.ElectronicMailAddress;
@@ -262,7 +257,6 @@ export default class FullTOCControl extends M.Control {
               }
             }
           }
-
           M.remote.get(vars.capabilities).then((response) => {
             const source = response.text;
             const urlService = source.split('<inspire_common:URL>')[1].split('<')[0].split('&amp;').join('&');
@@ -623,8 +617,8 @@ export default class FullTOCControl extends M.Control {
           const displayInLayerSwitcher = (layer.displayInLayerSwitcher === true);
           const isRaster = ['wms', 'wmts'].indexOf(layer.type.toLowerCase()) > -1;
           const isNotWMSFull = !((layer.type === M.layer.type.WMS) &&
-          M.utils.isNullOrEmpty(layer.name));
-          return (isTransparent && displayInLayerSwitcher && isRaster && isNotWMSFull);
+            M.utils.isNullOrEmpty(layer.name));
+          return ((isTransparent && displayInLayerSwitcher && isRaster && isNotWMSFull) || (layer.type === 'Vector' && layer.name !== '__draw__'));
         }).reverse();
 
         const overlayLayersPromise = Promise.all(overlayLayers.map(this.parseLayerForTemplate_));
@@ -656,7 +650,7 @@ export default class FullTOCControl extends M.Control {
       const html = M.template.compileSync(template, {
         vars: templateVars,
       });
-
+      this.clickGeometryPopup();
       this.registerImgErrorEvents_(html);
       this.template_.innerHTML = html.innerHTML;
       const layerList = this.template_.querySelector('.m-fulltoc-container .m-layers');
@@ -701,7 +695,8 @@ export default class FullTOCControl extends M.Control {
         const layerName = evt.target.getAttribute('data-layer-name');
         const layerURL = evt.target.getAttribute('data-layer-url');
         const legendErrorUrl = M.utils.concatUrlPaths([M.config.THEME_URL,
-          M.layer.WMS.LEGEND_ERROR]);
+          M.layer.WMS.LEGEND_ERROR,
+        ]);
         const layer = this.map_.getLayers().filter((l) => {
           return l.name === layerName && l.url === layerURL;
         })[0];
@@ -774,11 +769,12 @@ export default class FullTOCControl extends M.Control {
         outOfRange: !layer.inRange(),
         opacity: layer.getOpacity(),
         metadata: hasMetadata,
+        isFeatureServ: layer.type === 'Vector',
         type: layer.type,
+        tag: layer.type === 'Vector' ? 'Features' : layer.type,
         hasStyles: hasMetadata && layer.capabilitiesMetadata.style.length > 1,
         url: layer.url,
       };
-
       const legendUrl = layer.getLegendURL();
       if (legendUrl instanceof Promise) {
         legendUrl.then((url) => {
@@ -789,6 +785,20 @@ export default class FullTOCControl extends M.Control {
         layerVarTemplate.legend = layer.type !== 'KML' ? legendUrl : null;
         success(layerVarTemplate);
       }
+    });
+  }
+
+  checkIfApiFeatures(url) {
+    return M.remote.get(`${url}?f=json`).then((response) => {
+      let isJson = false;
+      if (!M.utils.isNullOrEmpty(response)) {
+        const responseString = response.text;
+        JSON.parse(responseString);
+        isJson = true;
+      }
+      return isJson;
+    }).catch(() => {
+      return false;
     });
   }
 
@@ -809,7 +819,7 @@ export default class FullTOCControl extends M.Control {
     let HTTPSeval = false;
     document.querySelector('#m-fulltoc-addservices-suggestions').style.display = 'none';
     const url = document.querySelector('div.m-dialog #m-fulltoc-addservices-search-input').value.trim().split('?')[0];
-    const type = (document.getElementById('m-fulltoc-addservices-wmts').checked || url.indexOf('wmts') > -1) ? 'WMTS' : 'WMS';
+
     if (!M.utils.isNullOrEmpty(url)) {
       if (M.utils.isUrl(url)) {
         if (this.http && !this.https) {
@@ -824,67 +834,17 @@ export default class FullTOCControl extends M.Control {
         }
 
         if (HTTPeval === true || HTTPSeval === true) {
-          if (type === 'WMTS') {
-            const promise = new Promise((success, reject) => {
-              const id = setTimeout(() => reject(), 15000);
-              M.remote.get(M.utils.getWMTSGetCapabilitiesUrl(url)).then((response) => {
-                clearTimeout(id);
-                success(response);
-              });
-            });
+          this.checkIfApiFeatures(url).then((responseIsJson) => {
+            let type = 'WMS';
 
-            promise.then((response) => {
-              try {
-                const getCapabilitiesParser = new M.impl.format.WMTSCapabilities();
-                const getCapabilities = getCapabilitiesParser.read(response.xml);
-                this.serviceCapabilities = getCapabilities.capabilities || {};
-                const layers = M.impl.util.wmtscapabilities.getLayers(
-                  getCapabilities.capabilities,
-                  url,
-                  this.map_.getProjection().code,
-                );
-                this.capabilities = this.filterResults(layers);
-                this.showResults();
-              } catch (err) {
-                M.dialog.error(getValue('exception.capabilities'));
-              }
-            }).catch((err) => {
-              M.dialog.error(getValue('exception.capabilities'));
-            });
-          } else {
-            const promise = new Promise((success, reject) => {
-              const id = setTimeout(() => reject(), 15000);
-              M.remote.get(M.utils.getWMSGetCapabilitiesUrl(url, '1.3.0')).then((response) => {
-                clearTimeout(id);
-                success(response);
-              });
-            });
+            if (document.getElementById('m-fulltoc-addservices-wmts').checked || url.indexOf('wmts') > -1) {
+              type = 'WTMS';
+            } else if (responseIsJson === true) {
+              type = 'GeoJSON';
+            }
 
-            promise.then((response) => {
-              try {
-                const getCapabilitiesParser = new M.impl.format.WMSCapabilities();
-                const getCapabilities = getCapabilitiesParser.read(response.xml);
-                this.serviceCapabilities = getCapabilities.Service || {};
-                const getCapabilitiesUtils = new M.impl.GetCapabilities(
-                  getCapabilities,
-                  url,
-                  this.map_.getProjection().code,
-                );
-
-                this.capabilities = this.filterResults(getCapabilitiesUtils.getLayers());
-                this.capabilities.forEach((layer) => {
-                  try {
-                    this.getParents(getCapabilities, layer);
-                  /* eslint-disable no-empty */
-                  } catch (err) {}
-                });
-
-                this.showResults();
-              } catch (err) {
-                M.dialog.error(getValue('exception.capabilities'));
-              }
-            }).catch((err) => {
-              const promise2 = new Promise((success, reject) => {
+            if (type === 'WMTS') {
+              const promise = new Promise((success, reject) => {
                 const id = setTimeout(() => reject(), 15000);
                 M.remote.get(M.utils.getWMTSGetCapabilitiesUrl(url)).then((response) => {
                   clearTimeout(id);
@@ -892,7 +852,7 @@ export default class FullTOCControl extends M.Control {
                 });
               });
 
-              promise2.then((response) => {
+              promise.then((response) => {
                 try {
                   const getCapabilitiesParser = new M.impl.format.WMTSCapabilities();
                   const getCapabilities = getCapabilitiesParser.read(response.xml);
@@ -904,14 +864,238 @@ export default class FullTOCControl extends M.Control {
                   );
                   this.capabilities = this.filterResults(layers);
                   this.showResults();
-                } catch (error) {
+                } catch (err) {
                   M.dialog.error(getValue('exception.capabilities'));
                 }
-              }).catch((eerror) => {
+              }).catch((err) => {
                 M.dialog.error(getValue('exception.capabilities'));
               });
-            });
-          }
+            } else if (type === 'GeoJSON') {
+              let urlOGC = url.trim();
+              if (M.utils.isUrl(urlOGC)) {
+                const collections = `${(urlOGC.endsWith('/') ? urlOGC : `${urlOGC}/`)}collections?f=json`;
+                M.remote.get(collections).then((response) => {
+                  const resJSON = JSON.parse(response.text);
+                  let contentCollections = `<div class="select-ogc-container"><select id="m-vectors-ogc-select"><option disabled="disabled" value="" selected="selected">${getValue('select_service')}</option>`;
+                  resJSON.collections.forEach((c) => {
+                    contentCollections += `<option data-name="${c.title}" value="${c.id}">${c.title}</option>`;
+                  });
+                  const limitInput = `<div id="input-limit-results"><label>${getValue('amount_results')} </label><input type="text" id="limit-items-input" maxlength="5" value="10"></input> <label>${getValue('amount_results_2')} </label></div>`;
+                  const bboxInput = `<div id="input-bbox"><label>${getValue('bbox-select')}<input type="checkbox" id="search-bbox"></div></label>`;
+                  const noLimit = `<div id="input-no-limit"><label>${getValue('no-limit')}<input type="checkbox" id="no-limit"></div></label>`;
+
+                  contentCollections += `</select></div><div class="btn-container">${noLimit}<br />${bboxInput}<br />${limitInput}<br /><button class="m-fulltoc-common-btn" id="select-button"> ${getValue('select')}</button><button class="m-fulltoc-common-btn" id="custom-query-button"> ${getValue('custom_query')}</button></div>`;
+                  document.querySelector('#fromOGCContainer').innerHTML = contentCollections;
+                  const btn = document.querySelector('#fromOGCContainer .btn-container button');
+                  const btnCustomQuery = document.querySelector('#custom-query-button');
+                  const btnAll = document.querySelector('#no-limit');
+                  const btnExtension = document.querySelector('#search-bbox');
+                  // boton para obtener todos los resultados
+                  btnAll.addEventListener('click', () => {
+                    if (btnAll.checked) {
+                      btnExtension.checked = false;
+                    }
+                  });
+                  // boton para obtener los elementos de la extension
+                  btnExtension.addEventListener('click', () => {
+                    if (btnExtension.checked) {
+                      btnAll.checked = false;
+                    }
+                  });
+                  btn.addEventListener('click', () => {
+                    document.getElementById('loading-fulltoc').style.display = 'initial';
+                    // loading
+                    const selectValue = document.querySelector('#m-vectors-ogc-select').value;
+                    const name = document.querySelector('#m-vectors-ogc-select').options[document.querySelector('#m-vectors-ogc-select').selectedIndex].getAttribute('data-name');
+                    const limit = document.querySelector('#limit-items-input').value;
+                    const checked = document.querySelector('#search-bbox').checked;
+                    const limitQuery = document.querySelector('#no-limit').checked;
+
+                    let items = `${(urlOGC.endsWith('/') ? urlOGC : `${urlOGC}/`)}collections/${selectValue}/items?f=json`;
+
+                    if (!limitQuery) {
+                      items += `&limit=${limit}`;
+                    } else {
+                      items += '&limit=10000';
+                    }
+
+                    items += '&properties=id';
+
+                    if (checked) {
+                      const bbox = this.map_.getBbox();
+                      const min = this.getImpl().getTransformedCoordinates(
+                        this.map_.getProjection().code,
+                        [bbox.x.min, bbox.y.min],
+                      );
+                      const max = this.getImpl().getTransformedCoordinates(
+                        this.map_.getProjection().code,
+                        [bbox.x.max, bbox.y.max],
+                      );
+                      const bboxString = `${min[0]},${min[1]},${max[0]},${max[1]}`;
+                      items = `${(urlOGC.endsWith('/') ? urlOGC : `${urlOGC}/`)}collections/${selectValue}/items?f=json&bbox=${bboxString}&limit=${limit}`;
+                    }
+                    M.remote.get(items).then((response2) => {
+                      const source = response2.text;
+                      // let urlToQuery = `${(urlOGC.endsWith('/') ? urlOGC : `${urlOGC}/`)}`;
+                      const features = this.getImpl().loadGeoJSONLayer(source, selectValue, name);
+                      this.getImpl().centerFeatures(features, false);
+                      document.getElementById('loading-fulltoc').style.display = 'none';
+                    }).catch((err) => {
+                      M.dialog.error(getValue('exception.error_ogc'));
+                      document.getElementById('loading-fulltoc').style.display = 'none';
+                    });
+                  });
+                  btnCustomQuery.addEventListener('click', () => {
+                    const selectValue = document.querySelector('#m-vectors-ogc-select').value;
+                    const urlQueryables = `${urlOGC}/collections/${selectValue}/queryables`;
+                    M.remote.get(urlQueryables).then((queryablesResponse) => {
+                      const res = JSON.parse(queryablesResponse.text);
+                      const props = res.properties;
+                      const vals = Object.values(props);
+                      let searchForm = '<div id="search-form">';
+                      vals.forEach((v) => {
+                        if (v.title !== undefined) {
+                          if (v.type === 'bool' || v.type === 'boolean') {
+                            searchForm += `<div id="form-input"><label for="search-form-${v.title}">${v.title}</label><input class="search-form-checkbox" type="checkbox" id="search-form-${v.title}"><br /></div>`;
+                          } else if (v.type === 'timestamp' || v.type === 'date') {
+                            searchForm += `<div id="form-input"><label for="search-form-${v.title}">${v.title}</label><input class="search-form-date" type="date" id="search-form-${v.title}"><br /></div>`;
+                          } else if (v.type === 'int4' || v.type === 'int' || v.type === 'number' || v.type === 'numeric') {
+                            searchForm += `<div id="form-input"><label for="search-form-${v.title}">${v.title}</label><input class="search-form-number" type="number" id="search-form-${v.title}"><br /></div>`;
+                          } else {
+                            searchForm += `<div id="form-input"><label for="search-form-${v.title}">${v.title}</label><input type="text" id="search-form-${v.title}"><br /></div>`;
+                          }
+                        }
+                      });
+                      searchForm += `<button id="search-form-sendbutton" class="m-fulltoc-common-btn">${getValue('search')}</button></div>`;
+                      M.template.compileSync(searchForm);
+                      M.dialog.info(searchForm, `${getValue('search_data')}`);
+                      const button = document.querySelector('div.m-dialog.info div.m-button > button');
+                      button.innerHTML = getValue('close');
+                      button.style.width = '75px';
+                      button.style.backgroundColor = '#71a7d3';
+                      document.querySelector('#search-form-sendbutton').addEventListener('click', () => {
+                        const formInputs = document.querySelectorAll('#search-form input');
+                        const formData = {};
+                        let queryUrl = `${urlOGC}/collections/${selectValue}/items?f=json`;
+                        formInputs.forEach((inputForm) => {
+                          const id = inputForm.id;
+                          const attrName = id.substring(inputForm.id.indexOf('form-') + 5);
+                          switch (inputForm.type) {
+                            case 'checkbox':
+                              formData[attrName] = inputForm.checked;
+                              break;
+                            case 'date':
+                              if (!M.utils.isNullOrEmpty(inputForm.value)) {
+                                const date = new Date(inputForm.value);
+                                formData[attrName] = date.toISOString().split('T')[0];
+                              }
+                              break;
+                            case 'number':
+                              if (!M.utils.isNullOrEmpty(inputForm.value)) {
+                                formData[attrName] = inputForm.value;
+                              }
+                              break;
+                            default:
+                              if (!M.utils.isNullOrEmpty(inputForm.value)) {
+                                formData[attrName] = encodeURIComponent(inputForm.value);
+                              }
+                          }
+                        });
+
+                        const propsKeysForm = Object.keys(formData);
+                        const propsValuesForm = Object.values(formData);
+
+                        propsKeysForm.forEach((key, i) => {
+                          queryUrl += `&${key}=${propsValuesForm[i]}`;
+                        });
+                        M.remote.get(queryUrl).then((response3) => {
+                          const responseText = response3.text;
+                          const layer = this.map_.getLayers()
+                            .filter(l => l.name === selectValue)[0];
+                          this.map_.removeLayers(layer);
+                          const features = this.getImpl()
+                            .loadGeoJSONLayer(responseText, selectValue);
+                          document.querySelector('.m-dialog').remove();
+                          if (features.length === 0) {
+                            urlOGC = '';
+                            M.dialog.error(getValue('no_results'));
+                          } else {
+                            urlOGC = '';
+                            this.getImpl().centerFeatures(features, false);
+                          }
+                        });
+                      });
+                    }).catch((err) => {
+                      M.dialog.error(getValue('no_results'));
+                    });
+                  });
+                }).catch((err) => {
+                  urlOGC = '';
+                  M.dialog.error(getValue('exception.error_ogc'));
+                });
+              }
+            } else {
+              const promise = new Promise((success, reject) => {
+                const id = setTimeout(() => reject(), 15000);
+                M.remote.get(M.utils.getWMSGetCapabilitiesUrl(url, '1.3.0')).then((response) => {
+                  clearTimeout(id);
+                  success(response);
+                });
+              });
+
+              promise.then((response) => {
+                try {
+                  const getCapabilitiesParser = new M.impl.format.WMSCapabilities();
+                  const getCapabilities = getCapabilitiesParser.read(response.xml);
+                  this.serviceCapabilities = getCapabilities.Service || {};
+                  const getCapabilitiesUtils = new M.impl.GetCapabilities(
+                    getCapabilities,
+                    url,
+                    this.map_.getProjection().code,
+                  );
+
+                  this.capabilities = this.filterResults(getCapabilitiesUtils.getLayers());
+                  this.capabilities.forEach((layer) => {
+                    try {
+                      this.getParents(getCapabilities, layer);
+                      /* eslint-disable no-empty */
+                    } catch (err) {}
+                  });
+
+                  this.showResults();
+                } catch (err) {
+                  M.dialog.error(getValue('exception.capabilities'));
+                }
+              }).catch((err) => {
+                const promise2 = new Promise((success, reject) => {
+                  const id = setTimeout(() => reject(), 15000);
+                  M.remote.get(M.utils.getWMTSGetCapabilitiesUrl(url)).then((response) => {
+                    clearTimeout(id);
+                    success(response);
+                  });
+                });
+
+                promise2.then((response) => {
+                  try {
+                    const getCapabilitiesParser = new M.impl.format.WMTSCapabilities();
+                    const getCapabilities = getCapabilitiesParser.read(response.xml);
+                    this.serviceCapabilities = getCapabilities.capabilities || {};
+                    const layers = M.impl.util.wmtscapabilities.getLayers(
+                      getCapabilities.capabilities,
+                      url,
+                      this.map_.getProjection().code,
+                    );
+                    this.capabilities = this.filterResults(layers);
+                    this.showResults();
+                  } catch (error) {
+                    M.dialog.error(getValue('exception.capabilities'));
+                  }
+                }).catch((eerror) => {
+                  M.dialog.error(getValue('exception.capabilities'));
+                });
+              });
+            }
+          });
         } else {
           let errorMsg;
           if (this.http) {
@@ -930,6 +1114,94 @@ export default class FullTOCControl extends M.Control {
       M.dialog.error(getValue('exception.empty'));
     }
   }
+
+  clickGeometryPopup() {
+    const layers = this.map_.getLayers();
+    layers.forEach((layer) => {
+      if (layer.name !== 'TMSBaseIGN' && layer.name !== '__draw__') {
+        layer.on(M.evt.SELECT_FEATURES, (features, evt) => {
+          const selectedFeature = features[0];
+          if (selectedFeature !== undefined) {
+            const featureTabOpts = {
+              content: this.createPopupHtml(selectedFeature),
+            };
+            const popup = new M.Popup();
+            popup.addTab(featureTabOpts);
+            this.map_.addPopup(popup, evt.coord);
+          }
+        });
+      }
+    });
+  }
+
+  createPopupHtml(feature) {
+    const keys = Object.keys(feature.getAttributes());
+    const values = Object.values(feature.getAttributes());
+    let html = '<div id="feature-popup"><table border="0"><tbody>';
+
+    if (keys.length === 0 || values.length === 0) {
+      const geometry = feature.getGeoJSON().geometry;
+
+      html += '<tr>';
+      html += `<td> ${getValue('geometry')}: ${geometry.type} </td>`;
+      html += '</tr>';
+    } else {
+      keys.forEach((key, i) => {
+        if (typeof values[i] === 'string' || typeof values[i] === 'number') {
+          if (!M.utils.isNullOrEmpty(key) && !M.utils.isNullOrEmpty(values[i])) {
+            html += '<tr>';
+            html += `<td class="popup-table-row-key"> ${key}: </td><td class="popup-table-row-value"> ${values[i]} </td>`;
+            html += '</tr>';
+          }
+        } else if (typeof values[i] === 'boolean') {
+          if (!M.utils.isNullOrEmpty(key) && !M.utils.isNullOrEmpty(values[i])) {
+            html += '<tr>';
+            html += `<td class="popup-table-row-key"> ${key}: </td><td class="popup-table-row-value"> ${values[i] ? getValue('yes') : getValue('no')} </td>`;
+            html += '</tr>';
+          }
+        } else if (Array.isArray(values[i])) {
+          values[i].forEach((elem, j) => {
+            const string = this.objectParser(elem);
+            html += '<tr>';
+            html += `<td class="popup-table-row-key> ${key}, item ${j + 1}: </td><td class="popup-table-row-value"> ${string} </td>`;
+            html += '</tr>';
+          });
+        } else if (typeof values[i] === 'object' && !M.utils.isNullOrEmpty(values[i])) {
+          const objectKeys = Object.keys(values[i]);
+          const objectValues = Object.values(values[i]);
+          html += `<tr><td>${key}: `;
+          objectKeys.forEach((innerObjectKey, j) => {
+            html += ` ${innerObjectKey}= [${this.objectParser(objectValues[j])}]`;
+          });
+          html += '</td></tr>';
+        }
+      });
+    }
+
+    html += '</tbody></table>';
+
+    return html;
+  }
+
+  objectParser(object) {
+    let string = '';
+    if (Array.isArray(object)) {
+      object.forEach((item) => {
+        string += ` ${item} `;
+      });
+    } else {
+      const keys = Object.keys(object);
+      const values = Object.values(object);
+
+      keys.forEach((key, i) => {
+        if (!M.utils.isNullOrEmpty(key) && !M.utils.isNullOrEmpty(values[i])) {
+          string += `${key}= ${values[i]} `;
+        }
+      });
+    }
+    return string;
+  }
+
 
   filterResults(allLayers) {
     const layers = [];
@@ -968,7 +1240,7 @@ export default class FullTOCControl extends M.Control {
       allLayers.forEach((layer) => {
         let insideService = false;
         allServices.forEach((service) => {
-          if (service.type === layer.type && this.checkUrls(service.url, layer.url)) {
+          if (service.type === layer.type && service.url === layer.url) {
             if (service.white_list !== undefined && service.white_list.length > 0 &&
               service.white_list.indexOf(layer.name) > -1 &&
               layerNames.indexOf(layer.name) === -1) {
@@ -995,7 +1267,7 @@ export default class FullTOCControl extends M.Control {
           allLayers.forEach((layer) => {
             let insideService = false;
             group.services.forEach((service) => {
-              if (service.type === layer.type && this.checkUrls(service.url, layer.url)) {
+              if (service.type === layer.type && service.url === layer.url) {
                 if (service.white_list !== undefined && service.white_list.length > 0 &&
                   service.white_list.indexOf(layer.name) > -1 &&
                   layerNames.indexOf(layer.name) === -1) {
@@ -1331,9 +1603,5 @@ export default class FullTOCControl extends M.Control {
     document.querySelector('#m-fulltoc-addservices-results').innerHTML = '';
     document.querySelector('#m-fulltoc-addservices-suggestions').style.display = 'none';
     document.querySelector('div.m-dialog #m-fulltoc-addservices-search-input').value = '';
-  }
-
-  checkUrls(url1, url2) {
-    return url1 === url2 || (url1.indexOf(url2) > -1) || (url2.indexOf(url1) > -1);
   }
 }

@@ -9,7 +9,7 @@
           <table>
             <tbody>
               <tr>
-                <td><span class="m-layer-type">{{type}}</span></td>
+                <td><span class="m-layer-type">{{tag}}</span></td>
                 <td><span class="m-layer-name">{{title}}</span></td>
               </tr>
             </tbody>
@@ -27,6 +27,9 @@
             <span title="{{../translations.zoom}}" data-layer-name="{{id}}" data-layer-url="{{url}}" class="icon-localizacion3 m-fulltoc-zoom"></span>
             {{#if metadata}}
               <span title="{{../translations.info_metadata}}" data-layer-name="{{id}}" data-layer-url="{{url}}" class="icon-info m-fulltoc-info"></span>
+            {{/if}}
+            {{#if isFeatureServ}}
+              <span title="{{../translations.info_metadata}}" data-layer-name="{{id}}" data-layer-url="{{url}}" class="icon-info m-fulltoc-info-py-geoapi"></span>
             {{/if}}
             {{#if hasStyles}}
               <span title="{{../translations.change_style}}" data-layer-name="{{id}}" data-layer-url="{{url}}" class="icon-pincel m-fulltoc-config"></span>

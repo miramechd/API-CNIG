@@ -11,7 +11,8 @@
     "select_layer": "Debes seleccionar al menos una capa",
     "no_results": "No se han encontrado capas en este servicio",
     "codsi": "Ha ocurrido un error al consultar el catálogo CODSI",
-    "codsi_no_results": "No hay resultados para su búsqueda"
+    "codsi_no_results": "No hay resultados para su búsqueda",
+    "error_ogc": "No se ha podido consultar el servicio"
   },
   "tooltip": "Capas",
   "info": "Información",
@@ -57,5 +58,18 @@
   "filter_text": "Texto a buscar",
   "metadata": "Metadatos",
   "see_more_layer": "Ver más información de la capa",
-  "see_more_service": "Ver más información del servicio"
+  "see_more_service": "Ver más información del servicio",
+  "select_service": "Selecciona una capa",
+  "amount_results": "Obtener",
+  "amount_results_2": "elementos",
+  "bbox-select": "Obtener solo elementos de la extensión actual",
+  "no-limit": "Obtener todos los elementos",
+  "custom_query": "Consulta personalizada",
+  "search_data": "Buscar datos",
+  "select": "Añadir",
+  "service_url": "URL del servicio",
+  "no_results": "No se han encontrado resultados",
+  "search": "Buscar",
+  "yes": "Sí",
+  "no": "No"
 }

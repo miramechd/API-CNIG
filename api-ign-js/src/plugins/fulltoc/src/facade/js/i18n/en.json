@@ -11,7 +11,8 @@
     "select_layer": "You must select at least one layer",
     "no_results": "No layers found in this service",
     "codsi": "An error occurred while consulting the CODSI catalog",
-    "codsi_no_results": "There are no results for your search"
+    "codsi_no_results": "There are no results for your search",
+    "error_ogc": "The service could not be consulted"
   },
   "tooltip": "Layers",
   "info": "Information",
@@ -57,5 +58,18 @@
   "filter_text": "Text to search",
   "metadata": "Metadata",
   "see_more_layer": "View more information about the layer (Metadata)",
-  "see_more_service": "View more service information (Metadata)"
+  "see_more_service": "View more service information (Metadata)",
+  "select_service": "Select layer",
+  "amount_results": "Number",
+  "amount_results_2": "elements",
+  "bbox-select": "Find features within rendered map",
+  "no-limit": "Get all results",
+  "custom_query": "Custom query",
+  "search_data": "Search data",
+  "select": "Select",
+  "service_url": "Service URL",
+  "no_results": "No results found",
+  "search": "Search",
+  "yes": "Sí",
+  "no": "No"
 }

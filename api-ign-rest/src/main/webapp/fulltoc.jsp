@@ -174,7 +174,7 @@
             https = (selectHttps.options[selectHttps.selectedIndex].value == 'true');
             posicion = selectPosicion.options[selectPosicion.selectedIndex].value;
             codsi = (selectCODSI.options[selectCODSI.selectedIndex].value == 'true');
-            window.location.href = 'https://mapea-lite.desarrollo.guadaltel.es/api-core//api-core/?fulltoc=' + posicion + '*' + collapsed + '*' + collapsible + '*' + codsi;
+            window.location.href = 'https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core//api-core/?fulltoc=' + posicion + '*' + collapsed + '*' + collapsible + '*' + codsi;
         });
 
         // const precharged = {
@@ -231,6 +231,14 @@
                 codsi: (codsi || false),
                 precharged: {
                     groups: [{
+                            name: 'PyGeoapy',
+                            services: [{
+                                name: 'Unidades administrativas',
+                                type: 'Features',
+                                url: 'http://ignsolarguadaltel.desarrollo.guadaltel.es',
+                                white_list: ['UnidadAdministrativas'],
+                            }, ],
+                        }, {
                             name: 'Hidrografía',
                             services: [{
                                 name: 'IDEE Hidrografía',
@@ -285,24 +293,24 @@
             });
 
             layerUA = new M.layer.WMS({
-			  url: 'https://www.ign.es/wms-inspire/unidades-administrativas?',
-			  name: 'AU.AdministrativeUnit',
-			  legend: 'Unidad administrativa',
-			  tiled: false,
-			}, {});
+                url: 'https://www.ign.es/wms-inspire/unidades-administrativas?',
+                name: 'AU.AdministrativeUnit',
+                legend: 'Unidad administrativa',
+                tiled: false,
+            }, {});
 
-			layerinicial = new M.layer.WMS({
-			  url: 'https://www.ign.es/wms-inspire/unidades-administrativas?',
-			  name: 'AU.AdministrativeBoundary',
-			  legend: 'Limite administrativo',
-			  tiled: false,
-			}, {
-			  visibility: false,
-			});
+            layerinicial = new M.layer.WMS({
+                url: 'https://www.ign.es/wms-inspire/unidades-administrativas?',
+                name: 'AU.AdministrativeBoundary',
+                legend: 'Limite administrativo',
+                tiled: false,
+            }, {
+                visibility: false,
+            });
 
-			map.addLayers(ocupacionSuelo);
-			map.addLayers(layerUA);
-			map.addLayers(layerinicial);
+            map.addLayers(ocupacionSuelo);
+            map.addLayers(layerUA);
+            map.addLayers(layerinicial);
 
             let mp2 = new M.plugin.ShareMap({
                 baseUrl: window.location.href.substring(0, window.location.href.indexOf('api-core')) + "api-core/",
@@ -321,10 +329,13 @@
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-163660977-1"></script>
 <script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'UA-163660977-1');
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-163660977-1');
 </script>
 
 </html>
