@@ -3,6 +3,7 @@ import { map as Mmap } from 'M/mapea';
 // import WMTS from 'M/layer/WMTS';
 import MVT from 'M/layer/MVT';
 import XYZ from 'M/layer/XYZ';
+import OGCAPIFeatures from 'M/layer/OGCAPIFeatures';
 
 
 const mapa = Mmap({
@@ -44,9 +45,15 @@ const xyz = new XYZ({
   projection: 'EPSG:3857'
 })
 
+
+const tst = new OGCAPIFeatures({
+  name: 'prueba',
+}, { displayInLayerSwitcher: false });
 // mapa.addLayers(mvt);
 // mapa.addLayers(mvt2);
 mapa.addLayers(mvt3);
+mapa.addLayers(tst);
+
 // mapa.addXYZ(xyz);
 // mapa.addLayers(mvt4);
 // M.Popup.options.takeMeThere = true;

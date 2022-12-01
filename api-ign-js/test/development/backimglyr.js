@@ -34,7 +34,7 @@ const mp2 = new Attributions({
 });
 
 const mp3 = new ShareMap({
-  baseUrl: 'https://mapea-lite.desarrollo.guadaltel.es/api-core/',
+  baseUrl: 'https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core/',
   position: 'BR',
 });
 

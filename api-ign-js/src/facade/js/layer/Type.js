@@ -103,6 +103,15 @@ export const Vector = 'Vector';
 export const MVT = 'MVT';
 
 /**
+ * OGCAPIFeatures Tile type
+ * @const
+ * @type {string}
+ * @public
+ * @api
+ */
+export const OGCAPIFeatures = 'OGCAPIFeatures';
+
+/**
  * All layer types
  * @const
  * @type {object}
@@ -120,6 +129,7 @@ const layertypes = {
   MVT,
   XYZ,
   TMS,
+  OGCAPIFeatures,
 };
 
 /**

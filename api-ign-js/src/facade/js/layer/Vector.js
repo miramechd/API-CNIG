@@ -4,7 +4,6 @@
 import VectorImpl from 'impl/layer/Vector';
 import { geojsonTo4326 } from 'impl/util/Utils';
 import { isUndefined, isArray, isNullOrEmpty, isString } from '../util/Utils';
-import Utils from '../style/utils';
 import Exception from '../exception/exception';
 import LayerBase from './Layer';
 import * as LayerType from './Type';
@@ -14,6 +13,7 @@ import FilterBase from '../filter/Base';
 import StyleCluster from '../style/Cluster';
 import * as EventType from '../event/eventtype';
 import { getValue } from '../i18n/language';
+import Generic from '../style/Generic';
 
 /**
  * @classdesc
@@ -270,7 +270,7 @@ class Vector extends LayerBase {
     if (isString(style)) {
       style = Style.deserialize(style);
     } else if (!(style instanceof Style)) {
-      style = Utils.generateStyleLayer(style, this);
+      style = new Generic(style);
     }
     // const isCluster = style instanceof StyleCluster;
     // const isPoint = [POINT, MULTI_POINT].includes(this.getGeometryType());
@@ -407,13 +407,13 @@ class Vector extends LayerBase {
 }
 
 /**
- * Options style by default
+ * Default params for style vector layers
  * @const
  * @type {object}
  * @public
  * @api
  */
-Vector.DEFAULT_OPTIONS_STYLE = {
+Vector.DEFAULT_PARAMS = {
   fill: {
     color: 'rgba(255, 255, 255, 0.4)',
     opacity: 0.4,
@@ -422,7 +422,26 @@ Vector.DEFAULT_OPTIONS_STYLE = {
     color: '#3399CC',
     width: 1.5,
   },
-  radius: 5,
+};
+
+/**
+ * Default style for Vector layers
+ * @const
+ * @type {object}
+ * @public
+ * @api
+ */
+Vector.DEFAULT_OPTIONS_STYLE = {
+  point: {
+    ...Vector.DEFAULT_PARAMS,
+    radius: 5,
+  },
+  line: {
+    ...Vector.DEFAULT_PARAMS,
+  },
+  polygon: {
+    ...Vector.DEFAULT_PARAMS,
+  },
 };
 
 export default Vector;

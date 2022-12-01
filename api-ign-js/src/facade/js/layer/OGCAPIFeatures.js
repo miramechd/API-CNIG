@@ -1,7 +1,7 @@
 /**
- * @module M/layer/WFS
+ * @module M/layer/OGCAPIFeatures
  */
-import WFSImpl from 'impl/layer/WFS';
+import OGCAPIFeaturesImpl from 'impl/layer/OGCAPIFeatures';
 import { isUndefined, isNullOrEmpty } from '../util/Utils';
 import Exception from '../exception/exception';
 import Vector from './Vector';
@@ -12,33 +12,33 @@ import { getValue } from '../i18n/language';
 
 /**
  * @classdesc
- * Main constructor of the class. Creates a WFS layer
+ * Main constructor of the class. Creates a OGCAPIFeatures layer
  * with parameters specified by the user
  * @api
  */
-class WFS extends Vector {
+class OGCAPIFeatures extends Vector {
   /**
    * @constructor
    * @extends {M.layer.Vector}
-   * @param {string|Mx.parameters.WFS} userParams parameters
-   * @param {Mx.parameters.LayerOptions} options provided by the user
-   * @param {Object} vendorOpts vendor options for the base library
+   * @param {string|Mx.parameters.OGCAPIFeatures} uPar parameters
+   * @param {Mx.parameters.LayerOptions} opt provided by the user
+   * @param {Object} vendorOpts vendor opt for the base library
    * @api
    */
-  constructor(userParams, options = {}, vendorOpts = {}, impl = new WFSImpl(options, vendorOpts)) {
+  constructor(uPar, opt = {}, vendorOpts = {}, impl = new OGCAPIFeaturesImpl(opt, vendorOpts)) {
     // This layer is of parameters.
-    const parameters = parameter.layer(userParams, LayerType.WFS);
+    const parameters = parameter.layer(uPar, LayerType.OGCAPIFeatures);
 
     // calls the super constructor
-    super(parameters, options, undefined, impl);
+    super(parameters, opt, undefined, impl);
 
-    // checks if the implementation can create WFS layers
-    if (isUndefined(WFSImpl)) {
-      Exception(getValue('exception').wfslayer_method);
+    // checks if the implementation can create OGCAPIFeatures layers
+    if (isUndefined(OGCAPIFeaturesImpl)) {
+      Exception(getValue('exception').OGCAPIFeatureslayer_method);
     }
 
     // checks if the param is null or empty
-    if (isNullOrEmpty(userParams)) {
+    if (isNullOrEmpty(uPar)) {
       Exception(getValue('exception').no_param);
     }
 
@@ -57,11 +57,26 @@ class WFS extends Vector {
     // ids
     this.ids = parameters.ids;
 
+    // limit
+    this.limit = parameters.limit;
+
+    // offset
+    this.offset = parameters.offset;
+
+    // id
+    this.id = parameters.id;
+
+    // format
+    this.format = parameters.format;
+
+    // bbox
+    this.bbox = parameters.bbox;
+
     // version
     this.version = parameters.version;
 
     // options
-    this.options = options;
+    this.opt = opt;
   }
 
   /**
@@ -69,13 +84,13 @@ class WFS extends Vector {
    * the layer was selected
    */
   get type() {
-    return LayerType.WFS;
+    return LayerType.OGCAPIFeatures;
   }
 
   set type(newType) {
     if (!isUndefined(newType) && !isNullOrEmpty(newType) &&
-      (newType !== LayerType.WFS)) {
-      Exception('El tipo de capa debe ser \''.concat(LayerType.WFS).concat('\' pero se ha especificado \'').concat(newType).concat('\''));
+      (newType !== LayerType.OGCAPIFeatures)) {
+      Exception('El tipo de capa debe ser \''.concat(LayerType.OGCAPIFeatures).concat('\' pero se ha especificado \'').concat(newType).concat('\''));
     }
   }
 
@@ -126,7 +141,7 @@ class WFS extends Vector {
     if (!isNullOrEmpty(newGeometry)) {
       const parsedGeom = parse(newGeometry);
       if (isNullOrEmpty(parsedGeom)) {
-        Exception(`El tipo de capa WFS <b>${newGeometry}</b> no se reconoce. Los tipos disponibles son: POINT, LINE, POLYGON, MPOINT, MLINE, MPOLYGON`);
+        Exception(`El tipo de capa OGCAPIFeatures <b>${newGeometry}</b> no se reconoce. Los tipos disponibles son: POINT, LINE, POLYGON, MPOINT, MLINE, MPOLYGON`);
       }
       this.getImpl().geometry = parsedGeom;
     }
@@ -148,6 +163,82 @@ class WFS extends Vector {
   }
 
   /**
+   * 'limit' the layer name
+   */
+  get limit() {
+    return this.getImpl().limit;
+  }
+
+  set limit(newLimit) {
+    if (isNullOrEmpty(newLimit)) {
+      this.getImpl().limit = this.limit;
+    } else {
+      this.getImpl().limit = newLimit;
+    }
+  }
+
+  /**
+ * 'offset' the layer name
+ */
+  get offset() {
+    return this.getImpl().offset;
+  }
+
+  set offset(newoffset) {
+    if (isNullOrEmpty(newoffset)) {
+      this.getImpl().offset = this.offset;
+    } else {
+      this.getImpl().offset = newoffset;
+    }
+  }
+
+  /**
+   * 'id' the layer name
+   */
+  get id() {
+    return this.getImpl().id;
+  }
+
+  set id(newid) {
+    if (isNullOrEmpty(newid)) {
+      this.getImpl().id = this.id;
+    } else {
+      this.getImpl().id = newid;
+    }
+  }
+
+  /**
+   * 'format' the layer name
+   */
+  get format() {
+    return this.getImpl().format;
+  }
+
+  set format(newformat) {
+    if (isNullOrEmpty(newformat)) {
+      this.getImpl().format = this.format;
+    } else {
+      this.getImpl().format = newformat;
+    }
+  }
+
+  /**
+  * 'bbox' the layer name
+  */
+  get bbox() {
+    return this.getImpl().bbox;
+  }
+
+  set bbox(newbbox) {
+    if (isNullOrEmpty(newbbox)) {
+      this.getImpl().bbox = this.bbox;
+    } else {
+      this.getImpl().bbox = newbbox;
+    }
+  }
+
+
+  /**
    * 'version' the layer name
    */
   get version() {
@@ -161,6 +252,7 @@ class WFS extends Vector {
       this.getImpl().version = '1.0.0'; // default value
     }
   }
+
   /**
    * This function checks if an object is equals
    * to this layer
@@ -190,7 +282,7 @@ class WFS extends Vector {
    * @param {M.Style}
    * @param {bool}
    */
-  setStyle(styleParam, applyToFeature = false, defaultStyle = WFS.DEFAULT_OPTIONS_STYLE) {
+  setStyle(styleParam, applyToFeature = false, defaultStyle = OGCAPIFeatures.DEFAULT_OPTS_STYLE) {
     super.setStyle(styleParam, applyToFeature, defaultStyle);
   }
 
@@ -205,11 +297,16 @@ class WFS extends Vector {
   equals(obj) {
     let equals = false;
 
-    if (obj instanceof WFS) {
+    if (obj instanceof OGCAPIFeatures) {
       equals = (this.url === obj.url);
       equals = equals && (this.namespace === obj.namespace);
       equals = equals && (this.name === obj.name);
       equals = equals && (this.ids === obj.ids);
+      equals = equals && (this.limit === obj.limit);
+      equals = equals && (this.offset === obj.offset);
+      equals = equals && (this.format === obj.format);
+      equals = equals && (this.bbox === obj.bbox);
+      equals = equals && (this.id === obj.id);
       equals = equals && (this.cql === obj.cql);
       equals = equals && (this.version === obj.version);
     }
@@ -219,13 +316,13 @@ class WFS extends Vector {
 }
 
 /**
- * Default params for style WFS layers
+ * Default params for style OGCAPIFeatures layers
  * @const
  * @type {object}
  * @public
  * @api
  */
-WFS.DEFAULT_PARAMS = {
+OGCAPIFeatures.DEFAULT_PARAMS = {
   fill: {
     color: 'rgba(103, 175, 19, 0.2)',
     opacity: 0.4,
@@ -237,23 +334,23 @@ WFS.DEFAULT_PARAMS = {
 };
 
 /**
- * Default style for WFS layers
+ * Default style for OGCAPIFeatures layers
  * @const
  * @type {object}
  * @public
  * @api
  */
-WFS.DEFAULT_OPTIONS_STYLE = {
+OGCAPIFeatures.DEFAULT_OPTS_STYLE = {
   point: {
-    ...WFS.DEFAULT_PARAMS,
+    ...OGCAPIFeatures.DEFAULT_PARAMS,
     radius: 5,
   },
   line: {
-    ...WFS.DEFAULT_PARAMS,
+    ...OGCAPIFeatures.DEFAULT_PARAMS,
   },
   polygon: {
-    ...WFS.DEFAULT_PARAMS,
+    ...OGCAPIFeatures.DEFAULT_PARAMS,
   },
 };
 
-export default WFS;
+export default OGCAPIFeatures;

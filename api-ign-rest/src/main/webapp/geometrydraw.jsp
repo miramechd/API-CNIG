@@ -132,7 +132,7 @@
             collapsible = (selectCollapsible.options[selectCollapsible.selectedIndex].value == 'true');
             posicion = selectPosicion.options[selectPosicion.selectedIndex].value;
 
-            window.location.href = 'https://mapea-lite.desarrollo.guadaltel.es/api-core//api-core/?geometrydraw=' + posicion + '*' + collapsed + '*' + collapsible;
+            window.location.href = 'https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core//api-core/?geometrydraw=' + posicion + '*' + collapsed + '*' + collapsible;
         })
 
         function crearPlugin(collapsed, collapsible, posicion) {

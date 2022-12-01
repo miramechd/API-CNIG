@@ -44,6 +44,7 @@ import WFS from './layer/WFS';
 import WMS from './layer/WMS';
 import WMTS from './layer/WMTS';
 import MVT from './layer/MVT';
+import OGCAPIFeatures from './layer/OGCAPIFeatures';
 import Panel from './ui/Panel';
 import * as Position from './ui/position';
 import GeoJSON from './layer/GeoJSON';
@@ -781,6 +782,44 @@ class Map extends Base {
     return layers;
   }
 
+
+  /**
+   * This function gets the OGCAPIFeatures layers added to the map
+   *
+   * @function
+   * @param {Array<string>|Array<Mx.parameters.Layer>} layersParam
+   * @returns {Array<OGCAPIFeatures>} layers from the map
+   * @api
+   */
+  getOGCAPIFeatures(layersParamVar) {
+    let layersParam = layersParamVar;
+    // checks if the implementation can manage layers
+    if (isUndefined(MapImpl.prototype.getOGCAPIFeatures)) {
+      Exception(getValue('exception').getogcapif_method);
+    }
+
+    // parses parameters to Array
+    if (isNull(layersParam)) {
+      layersParam = [];
+    } else if (!isArray(layersParam)) {
+      layersParam = [layersParam];
+    }
+
+    // gets the parameters as Layer objects to filter
+    let filters = [];
+    if (layersParam.length > 0) {
+      filters = layersParam.map((layerParam) => {
+        return parameter.layer(layerParam, LayerType.OGCAPIFeatures);
+      });
+    }
+
+    // gets the layers
+    const layers = this.getImpl().getOGCAPIFeatures(filters).sort(Map.LAYER_SORT);
+
+    return layers;
+  }
+
+
   /**
    * This function gets the GeoJSON layers added to the map
    *
@@ -879,6 +918,80 @@ class Map extends Base {
         });
         // removes the layers
         this.getImpl().removeWFS(wfsLayers);
+      }
+    }
+    return this;
+  }
+  /**
+     * This function adds the OGCAPIFeatures layers to the map
+     *
+     * @function
+     * @param {Array<string>|Array<Mx.parameters.OGCAPIFeatures>} layersParam
+     * @returns {Map}
+     * @api
+     */
+  addOGCAPIFeatures(layersParamVar) {
+    let layersParam = layersParamVar;
+    if (!isNullOrEmpty(layersParam)) {
+      // checks if the implementation can manage layers
+      if (isUndefined(MapImpl.prototype.addOGCAPIFeatures)) {
+        Exception(getValue('exception').addogcapif_method);
+      }
+
+      // parses parameters to Array
+      if (!isArray(layersParam)) {
+        layersParam = [layersParam];
+      }
+
+      // gets the parameters as OGCAPIFeatures objects to add
+      const ogcapifLayers = [];
+      layersParam.forEach((layerParam) => {
+        let ogcapifLayer;
+        if (isObject(layerParam) && (layerParam instanceof OGCAPIFeatures)) {
+          ogcapifLayer = layerParam;
+        } else if (!(layerParam instanceof Layer)) {
+          try {
+            ogcapifLayer = new OGCAPIFeatures(layerParam, layerParam.options);
+          } catch (err) {
+            Dialog.error(err.toString());
+            throw err;
+          }
+        }
+        this.featuresHandler_.addLayer(ogcapifLayer);
+        ogcapifLayers.push(ogcapifLayer);
+      });
+
+      // adds the layers
+      this.getImpl().addOGCAPIFeatures(ogcapifLayers);
+      this.fire(EventType.ADDED_LAYER, [ogcapifLayers]);
+      this.fire(EventType.ADDED_OGCAPIFeatures, [ogcapifLayers]);
+    }
+    return this;
+  }
+
+  /**
+   * This function removes the OGCAPIFeatures layers to the map
+   *
+   * @function
+   * @param {Array<string>|Array<Mx.parameters.OGCAPIFeatures>} layersParam
+   * @returns {Map}
+   * @api
+   */
+  removeOGCAPIFeatures(layersParam) {
+    if (!isNullOrEmpty(layersParam)) {
+      // checks if the implementation can manage layers
+      if (isUndefined(MapImpl.prototype.removeOGCAPIFeatures)) {
+        Exception(getValue('exception').removeogcapif_method);
+      }
+
+      // gets the layers
+      const ogcapifLayers = this.getOGCAPIFeatures(layersParam);
+      if (ogcapifLayers.length > 0) {
+        ogcapifLayers.forEach((layer) => {
+          this.featuresHandler_.removeLayer(layer);
+        });
+        // removes the layers
+        this.getImpl().removeOGCAPIFeatures(ogcapifLayers);
       }
     }
     return this;

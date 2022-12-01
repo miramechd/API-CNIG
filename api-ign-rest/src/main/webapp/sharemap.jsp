@@ -47,9 +47,9 @@
             <option value="BL">Abajo Izquierda (BL)</option>
         </select>
         <label for="selectURL">Parámetro URL</label>
-        <input type="text" id="selectURL" list="urlSug" value="https://mapea-lite.desarrollo.guadaltel.es/api-core/" />
+        <input type="text" id="selectURL" list="urlSug" value="https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core/" />
         <datalist id="urlSug">
-            <option value="https://mapea-lite.desarrollo.guadaltel.es/api-core/"></option>
+            <option value="https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core/"></option>
             <option value="https://componentes.ign.es/api-core/"></option>
         </datalist>
         <!-- <label for="selectURLAPI">Parámetro URL API</label>
@@ -133,7 +133,7 @@
         buttonApi.addEventListener('click', function() {
             url = selectURL.value;
             posicion = selectPosicion.options[selectPosicion.selectedIndex].value;
-            window.location.href = 'https://mapea-lite.desarrollo.guadaltel.es/api-core/?sharemap=' + url + '*' + posicion;
+            window.location.href = 'https://ignogcapiguadaltel.desarrollo.guadaltel.es/api-core/?sharemap=' + url + '*' + posicion;
         })
 
         function cambiarTest() {

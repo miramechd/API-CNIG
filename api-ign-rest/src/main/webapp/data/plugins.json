@@ -210,6 +210,16 @@
     "description": "Test para añadir teselas vectoriales al mapa."
   },
   {
+    "name": "ogcapifeatures",
+    "plugin": "[]",
+    "version": "v1.0",
+    "url_es": "ogcapifeatures.jsp?language=es",
+    "url_en": "",
+    "url_git": "https://github.com/IGN-CNIG/API-CNIG/tree/master/api-ign-js/src/plugins/ogcapifeatures",
+    "image": "i",
+    "description": "Visualización de OGCAPIFeatures"
+  },
+  {
     "name": "overview",
     "plugin": "[overview]",
     "version": "v1.0",

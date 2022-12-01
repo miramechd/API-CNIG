@@ -1150,3 +1150,15 @@ export const readJSON = (file) => {
     }
   });
 };
+
+/**
+ * This function gets an array scale color in hexadecimal format
+ * @function
+ * @public
+ * @return {Array<string>} array scale color in hexadecimal format
+ * @api
+ */
+export const generateColorScale = (color1, color2, numberClasses) => {
+  return chroma.scale([color1, color2])
+    .colors(numberClasses);
+};
